@@ -17,7 +17,7 @@ class VoteCast(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     vote_id: Mapped[int] = mapped_column(ForeignKey("votes.id"))
     mp_id: Mapped[int] = mapped_column(ForeignKey("mp.id"))
-    decision: Mapped[...]
+    decision: Mapped[VoteDecision]
 
     vote = relationship("Vote", back_populates="votes_cast")
     mp = relationship("MP", back_populates="votes_cast")

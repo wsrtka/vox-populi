@@ -7,4 +7,3 @@ class Party(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     name: Mapped[int]
-    acronym: Mapped[str]

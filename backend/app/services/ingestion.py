@@ -1,8 +1,7 @@
-from requests.api import get
 from sqlalchemy.orm import Session
 
 from ..utils.sejm_api import get_json
-from ..schemas import Term, Party, MP, Proceeding
+from ..schemas import Term, Party, MP, Proceeding, Vote
 
 
 def ingest_terms(db: Session):
@@ -65,5 +64,32 @@ def ingest_proceedings(db: Session):
             db.add(proceeding_obj)
         else:
             proceeding_obj.title = proceeding['title']
+        db.commit()
+        ingest_voting_for_proceeding(db, proceeding_obj.id)
 
-    db.commit()
+
+def ingest_voting_for_proceeding(db: Session, proceeding_id: int):
+    voting_data = get_json(f'/votings/{proceeding_id}')
+
+    for vote in voting_data:
+        # going off the assumption that voting numbers are unique per sitting, not per sitting day
+        vote_obj = db.query(Vote).filter_by(sitting=vote['sitting'], voting_number=vote['votingNumber']).first()
+        if not vote_obj:
+            vote_obj = Vote(
+                date=vote['date'],
+                title=vote['title'],
+                description=vote['description'],
+                sitting=vote['sitting'],
+                sitting_day=vote['sittingDay'],
+                voting_number=vote['votingNumber']
+            )
+            db.add(vote_obj)
+        else:
+            vote_obj.date = vote['date']
+            vote_obj.title = vote['title']
+            vote_obj.description = vote['description']
+            vote_obj.sitting = vote['sitting']
+            vote_obj.sitting_day = vote['sittingDay']
+            vote_obj.voting_number = vote['votingNumber']
+        db.commit()
+        # ingest_vote_results

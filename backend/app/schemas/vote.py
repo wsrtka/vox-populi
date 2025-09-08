@@ -12,4 +12,5 @@ class Vote(Base):
     title: Mapped[str]
     description: Mapped[str]
 
-    votes_cast = relationship("VotesCast", back_populates="vote")
+    votes_cast = relationship("VotesCast", back_populates="votes")
+    proceedings = relationship("Proceeding", back_populates="votes")

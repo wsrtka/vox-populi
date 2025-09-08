@@ -1,7 +1,8 @@
+from requests.api import get
 from sqlalchemy.orm import Session
 
 from ..utils.sejm_api import get_json
-from ..schemas import Term, Party, MP
+from ..schemas import Term, Party, MP, Proceeding
 
 
 def ingest_terms(db: Session):
@@ -48,5 +49,21 @@ def ingest_parties_and_mps(db: Session):
             mp_obj.first_name = mp['firstName']
             mp_obj.last_name = mp['lastName']
             mp_obj.party_id = party_cache[mp['club']].id
+
+    db.commit()
+
+def ingest_proceedings(db: Session):
+    proceedings = get_json('/proceedings')
+
+    for proceeding in proceedings:
+        proceeding_obj = db.query(Proceeding).filter_by(id=proceeding['id']).first()
+        if not proceeding_obj:
+            proceeding_obj = Proceeding(
+                id=proceeding['id'],
+                title=proceeding['title']
+            )
+            db.add(proceeding_obj)
+        else:
+            proceeding_obj.title = proceeding['title']
 
     db.commit()

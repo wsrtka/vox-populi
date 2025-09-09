@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from ..utils.sejm_api import get_json
-from ..schemas import Term, Party, MP, Proceeding, Vote
+from ..schemas import Term, Party, MP, Proceeding, Vote, VoteDecision, VoteCast
 
 
 def ingest_terms(db: Session):
@@ -92,4 +92,23 @@ def ingest_voting_for_proceeding(db: Session, proceeding_id: int):
             vote_obj.sitting_day = vote['sittingDay']
             vote_obj.voting_number = vote['votingNumber']
         db.commit()
-        # ingest_vote_results
+        ingest_vote_results(db, proceeding_id, vote_obj.id)
+
+
+def ingest_vote_results(db: Session, proceeding_id: int,vote_id: int):
+    details = get_json(f'/votings/{proceeding_id}/{vote_id}')
+    for vote in details['votes']:
+        decision = vote['vote'].lower()
+        decision = VoteDecision(decision) if decision in VoteDecision.__members__.values() else VoteDecision.ABSTAIN
+
+        # this can lead to problems if multiple MPs share the same name
+        mp_obj = db.query(MP).filter_by(first_name=vote['firstName'], last_name=vote['lastName']).first()
+        vc_obj = None
+        if mp_obj:
+            vc_obj = db.query(VoteCast).filter_by(vote_id=vote_id, mp_id=mp_obj.id).first()
+            if not vc_obj:
+                vc_obj = VoteCast(vote_id=vote_id, mp_id=mp_obj.id, decision=decision)
+                db.add(vc_obj)
+            else:
+                vc_obj.decision = decision
+    db.commit()

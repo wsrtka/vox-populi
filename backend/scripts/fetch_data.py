@@ -2,7 +2,9 @@ import sys
 import pathlib
 
 # Add backend to PYTHONPATH
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / "backend"))
+backend_path = str(pathlib.Path(__file__).resolve().parents[1])
+print(backend_path)
+sys.path.append(backend_path)
 
 from app.database import SessionLocal, Base, engine
 from app.services.ingestion import ingest_terms, ingest_parties_and_mps, ingest_proceedings
